@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var session = require('express-session');
 
 
 var db = require('./app/config');
@@ -21,19 +22,30 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+// Session Management
+app.use(session({secret:'The cake is a lie.'}));
 
-
-app.get('/', 
+app.get('/', util.restrict,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
+app.get('/login', 
+function(req, res) {
+  res.render('login');
+});
+
+app.get('/signup', 
+function(req, res) {
+  res.render('signup');
+});
+
+app.get('/create', util.restrict,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/links', util.restrict,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
@@ -49,7 +61,9 @@ function(req, res) {
     return res.send(404);
   }
 
-  new Link({ url: uri }).fetch().then(function(found) {
+  var userId = util.getUserId(req);
+
+  new Link({ url: uri, user_id: userId }).fetch().then(function(found) {
     if (found) {
       res.send(200, found.attributes);
     } else {
@@ -62,7 +76,8 @@ function(req, res) {
         Links.create({
           url: uri,
           title: title,
-          base_url: req.headers.origin
+          base_url: req.headers.origin,
+          user_id: userId
         })
         .then(function(newLink) {
           res.send(200, newLink);
@@ -70,6 +85,43 @@ function(req, res) {
       });
     }
   });
+});
+
+app.post('/signup',
+function(req, res) {
+  new User({username: req.body.username }).fetch().then(function(found) {
+    if(found){
+      res.send(400, 'Username already taken');
+    } else {
+      Users.create({
+        username: req.body.username
+      }, {
+        password: req.body.password
+      })
+      .then(function(newUser){
+        // add sessionId with newUser.get('id')
+        return res.redirect('/');
+      });
+    }
+  })
+});
+
+app.post('/login',
+function(req, res) {
+  new User({username: req.body.username }).fetch().then(function(found) {
+    if(!found){
+      res.redirect('/login'); // User does not exist
+    } else {
+      var salt = found.get('salt');
+      var hash = bcrypt.hashSync(req.body.password, salt);
+      if(hash !== found.get('password')){
+        res.redirect('/login'); // User does not exist
+      } else {
+        // save sessionId to session table with userId
+        return res.redirect('/');
+      }
+    });
+  })
 });
 
 /************************************************************/
