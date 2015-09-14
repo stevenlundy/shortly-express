@@ -1,8 +1,8 @@
 var db = require('../config');
 var bcrypt = require('bcrypt-nodejs');
 var Promise = require('bluebird');
-
-
+var Link = require('./link.js');
+var Session = require('./session');
 
 var User = db.Model.extend({
   tableName: 'users',

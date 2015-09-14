@@ -11,6 +11,7 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
+var Session = require('./session');
 
 var app = express();
 
@@ -47,6 +48,9 @@ function(req, res) {
 
 app.get('/links', util.restrict,
 function(req, res) {
+
+  var userId = util.getUserId(req);
+
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
