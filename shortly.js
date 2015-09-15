@@ -70,6 +70,7 @@ function(req, res) {
 
   util.getUserId(req, function(userId){
     if(userId === -1){
+      console.log(req.sessionID);
       console.log('Non users should not be able to get here...');
     }
     new Link({ url: uri, user_id: userId }).fetch().then(function(found) {
@@ -104,11 +105,11 @@ function(req, res) {
       res.send(400, 'Username already taken');
     } else {
       Users.create({
-        username: req.body.username
-      }, {
+        username: req.body.username,
         password: req.body.password
       })
       .then(function(newUser){
+        console.log(req.sessionID);
         new Session({user_id: newUser.get('id'), token: req.sessionID}).save();
         return res.redirect('/');
       });
@@ -127,6 +128,7 @@ function(req, res) {
       if(hash !== found.get('password')){
         res.redirect('/login'); // User does not exist
       } else {
+        console.log('log in with session '+req.sessionID);
         new Session({user_id: found.id, token: req.sessionID}).save();
         return res.redirect('/');
       }
