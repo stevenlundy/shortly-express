@@ -67,7 +67,7 @@ db.knex.schema.hasTable('sessions').then(function(exists) {
     db.knex.schema.createTable('sessions', function (session) {
       session.increments('id').primary();
       session.integer('user_id');
-      session.string('session_id', 255);
+      session.string('token', 255);
       session.timestamps();
     }).then(function (table) {
       console.log('Created Table', table);

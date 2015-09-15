@@ -3,6 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var session = require('express-session');
+var bcrypt = require('bcrypt-nodejs');
 
 
 var db = require('./app/config');
@@ -11,7 +12,7 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
-var Session = require('./session');
+var Session = require('./app/models/session');
 
 var app = express();
 
@@ -49,10 +50,12 @@ function(req, res) {
 app.get('/links', util.restrict,
 function(req, res) {
 
-  var userId = util.getUserId(req);
-
-  Links.reset().fetch().then(function(links) {
-    res.send(200, links.models);
+  util.getUserId(req, function(userId){
+    Links.reset()
+    .query('where', 'user_id', '=', userId)
+    .fetch().then(function(links) {
+      res.send(200, links.models);
+    });
   });
 });
 
@@ -65,29 +68,32 @@ function(req, res) {
     return res.send(404);
   }
 
-  var userId = util.getUserId(req);
-
-  new Link({ url: uri, user_id: userId }).fetch().then(function(found) {
-    if (found) {
-      res.send(200, found.attributes);
-    } else {
-      util.getUrlTitle(uri, function(err, title) {
-        if (err) {
-          console.log('Error reading URL heading: ', err);
-          return res.send(404);
-        }
-
-        Links.create({
-          url: uri,
-          title: title,
-          base_url: req.headers.origin,
-          user_id: userId
-        })
-        .then(function(newLink) {
-          res.send(200, newLink);
-        });
-      });
+  util.getUserId(req, function(userId){
+    if(userId === -1){
+      console.log('Non users should not be able to get here...');
     }
+    new Link({ url: uri, user_id: userId }).fetch().then(function(found) {
+      if (found) {
+        res.send(200, found.attributes);
+      } else {
+        util.getUrlTitle(uri, function(err, title) {
+          if (err) {
+            console.log('Error reading URL heading: ', err);
+            return res.send(404);
+          }
+
+          Links.create({
+            url: uri,
+            title: title,
+            base_url: req.headers.origin,
+            user_id: userId
+          })
+          .then(function(newLink) {
+            res.send(200, newLink);
+          });
+        });
+      }
+    });
   });
 });
 
@@ -103,7 +109,7 @@ function(req, res) {
         password: req.body.password
       })
       .then(function(newUser){
-        // add sessionId with newUser.get('id')
+        new Session({user_id: newUser.get('id'), token: req.sessionID}).save();
         return res.redirect('/');
       });
     }
@@ -121,11 +127,11 @@ function(req, res) {
       if(hash !== found.get('password')){
         res.redirect('/login'); // User does not exist
       } else {
-        // save sessionId to session table with userId
+        new Session({user_id: found.id, token: req.sessionID}).save();
         return res.redirect('/');
       }
-    });
-  })
+    }
+  });
 });
 
 /************************************************************/
