@@ -6,6 +6,7 @@ var Users = require('../app/collections/users');
 var User = require('../app/models/user');
 var Links = require('../app/collections/links');
 var Link = require('../app/models/link');
+var Session = require('../app/models/link');
 
 /************************************************************/
 // Mocha doesn't have a way to designate pending before blocks.
@@ -63,11 +64,11 @@ describe('', function() {
 
     var requestWithSession = request.defaults({jar: true});
 
-    beforeEach(function(){
+    beforeEach(function(done){
       // create a user that we can then log-in with
       new User({
-          'username': 'Phillip',
-          'password': 'Phillip'
+          'username': 'Phillip'},
+          {'password': 'Phillip'
       }).save().then(function(){
         var options = {
           'method': 'POST',
@@ -292,8 +293,8 @@ describe('', function() {
 
     beforeEach(function(done){
       new User({
-          'username': 'Phillip',
-          'password': 'Phillip'
+          'username': 'Phillip'},
+          {'password': 'Phillip'
       }).save().then(function(){
         done()
       });
