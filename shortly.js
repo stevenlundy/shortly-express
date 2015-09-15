@@ -37,6 +37,14 @@ function(req, res) {
   res.render('login');
 });
 
+app.get('/logout',
+function(req, res){
+  new Session({token: req.sessionID}).fetch().then(function(session){
+    session.destroy();
+    res.redirect('/login');
+  });
+});
+
 app.get('/signup', 
 function(req, res) {
   res.render('signup');
@@ -49,7 +57,6 @@ function(req, res) {
 
 app.get('/links', util.restrict,
 function(req, res) {
-
   util.getUserId(req, function(userId){
     Links.reset()
     .query('where', 'user_id', '=', userId)
@@ -129,7 +136,7 @@ function(req, res) {
         res.redirect('/login'); // User does not exist
       } else {
         console.log('log in with session '+req.sessionID);
-        new Session({user_id: found.id, token: req.sessionID}).save();
+        new Session({user_id: found.get('id'), token: req.sessionID}).save();
         return res.redirect('/');
       }
     }
