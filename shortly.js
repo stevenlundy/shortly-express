@@ -145,13 +145,20 @@ function(req, res) {
 
 app.get('/links', util.restrict,
 function(req, res) {
-  util.getUserId(req, function(userId){
-    Links.reset()
-    .query('where', 'user_id', '=', userId)
-    .fetch().then(function(links) {
-      res.send(200, links.models);
-    });
+
+  Links.reset()
+  .query('where', 'user_id', '=', req.user.dbId)
+  .fetch().then(function(links) {
+    res.send(200, links.models);
   });
+
+  // util.getUserId(req, function(userId){
+  //   Links.reset()
+  //   .query('where', 'user_id', '=', userId)
+  //   .fetch().then(function(links) {
+  //     res.send(200, links.models);
+  //   });
+  // });
 });
 
 app.post('/links', 
@@ -163,34 +170,57 @@ function(req, res) {
     return res.send(404);
   }
 
-  util.getUserId(req, function(userId){
-    if(userId === -1){
-      console.log(req.sessionID);
-      console.log('Non users should not be able to get here...');
-    }
-    new Link({ url: uri, user_id: userId }).fetch().then(function(found) {
-      if (found) {
-        res.send(200, found.attributes);
-      } else {
-        util.getUrlTitle(uri, function(err, title) {
-          if (err) {
-            console.log('Error reading URL heading: ', err);
-            return res.send(404);
-          }
+  new Link({ url: uri, user_id: req.user.dbId }).fetch().then(function(found){
+    if (found) {
+      res.send(200, found.attributes);
+    } else {
+      util.getUrlTitle(uri, function(err, title) {
+        if (err) {
+          console.log('Error reading URL heading: ', err);
+          return res.send(404);
+        }
 
-          Links.create({
-            url: uri,
-            title: title,
-            base_url: req.headers.origin,
-            user_id: userId
-          })
-          .then(function(newLink) {
-            res.send(200, newLink);
-          });
+        Links.create({
+          url: uri,
+          title: title,
+          base_url: req.headers.origin,
+          user_id: req.user.dbId
+        })
+        .then(function(newLink) {
+          res.send(200, newLink);
         });
-      }
-    });
-  });
+      });
+    }
+  })
+
+  // util.getUserId(req, function(userId){
+  //   if(userId === -1){
+  //     console.log(req.sessionID);
+  //     console.log('Non users should not be able to get here...');
+  //   }
+  //   new Link({ url: uri, user_id: userId }).fetch().then(function(found) {
+  //     if (found) {
+  //       res.send(200, found.attributes);
+  //     } else {
+  //       util.getUrlTitle(uri, function(err, title) {
+  //         if (err) {
+  //           console.log('Error reading URL heading: ', err);
+  //           return res.send(404);
+  //         }
+
+  //         Links.create({
+  //           url: uri,
+  //           title: title,
+  //           base_url: req.headers.origin,
+  //           user_id: userId
+  //         })
+  //         .then(function(newLink) {
+  //           res.send(200, newLink);
+  //         });
+  //       });
+  //     }
+  //   });
+  // });
 });
 
 // app.post('/signup',
