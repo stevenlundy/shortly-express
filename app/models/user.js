@@ -15,10 +15,10 @@ var User = db.Model.extend({
   },
   initialize: function(){
     this.on('creating', function(model, attrs, options){
-      var salt = bcrypt.genSaltSync(10);
-      model.set('salt', salt);
-      var password = model.get('password');
-      model.set('password', bcrypt.hashSync(password, salt));
+      // var salt = bcrypt.genSaltSync(10);
+      // model.set('salt', salt);
+      // var password = model.get('password');
+      // model.set('password', bcrypt.hashSync(password, salt));
     });
   }
 });
